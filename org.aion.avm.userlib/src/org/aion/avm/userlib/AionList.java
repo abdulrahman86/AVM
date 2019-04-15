@@ -13,7 +13,6 @@ import java.util.*;
  * That is, these classes are transformed and accessible to contract code, without any special support from our VM.
  * We may expand, change, or remove this idea in favour of something else, as we proceed.  This solution isn't set in stone.
  *
- * TODO (AKI-122):  This is a VERY basic implementation which must be replace if we expect to proceed this way.
  * We might also want to make the class into a constructor argument, so we can add more aggressive type safety to the internals.
  */
 public class AionList<E> implements List<E> {
@@ -26,6 +25,11 @@ public class AionList<E> implements List<E> {
     public AionList() {
         this.storage = new Object[DEFAULT_CAPACITY];
         this.size = 0;
+    }
+
+    private AionList(int storageCapacity, int size) {
+        this.storage = new Object[storageCapacity];
+        this.size = size;
     }
 
     public void trimToSize() {
@@ -250,8 +254,22 @@ public class AionList<E> implements List<E> {
 
     @Override
     public List<E> subList(int fromIndex, int toIndex) {
-        // TODO (AKI-122):  Add sublist handling if we want to continue using this implementation (not included for alpha release).
-        return null;
+        subListRangeCheck(fromIndex, toIndex, size);
+
+        List<E> subList = new AionList<>((toIndex - fromIndex) * 2, toIndex - fromIndex);
+        System.arraycopy(this.storage, fromIndex, ((AionList<E>)subList).storage, 0, toIndex - fromIndex);
+
+        return subList;
+    }
+
+    private static void subListRangeCheck(int fromIndex, int toIndex, int size) {
+        if (fromIndex < 0)
+            throw new IndexOutOfBoundsException("fromIndex = " + fromIndex);
+        if (toIndex > size)
+            throw new IndexOutOfBoundsException("toIndex = " + toIndex);
+        if (fromIndex > toIndex)
+            throw new IllegalArgumentException("fromIndex(" + fromIndex +
+                    ") > toIndex(" + toIndex + ")");
     }
 
     @Override
