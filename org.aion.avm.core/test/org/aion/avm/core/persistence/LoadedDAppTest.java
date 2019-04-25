@@ -16,6 +16,7 @@ import org.aion.avm.internal.InternedClasses;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 
@@ -25,7 +26,9 @@ public class LoadedDAppTest {
     private IInstrumentation instrumentation;
     private AvmClassLoader loader;
     private IRuntimeSetup runtimeSetup;
-    private boolean preserveDebuggability = false;
+
+    // preserveDebuggability must be set true because of serialization format depencencies in these tests
+    private boolean preserveDebuggability = true;
 
     @Before
     public void setup() {
@@ -210,7 +213,7 @@ public class LoadedDAppTest {
         ReflectionStructureCodecTarget.s_seven = 5;
         ReflectionStructureCodecTarget.s_eight = 5.0d;
         ReflectionStructureCodecTarget.s_nine = new ReflectionStructureCodecTarget();
-        
+
         LoadedDApp dapp = new LoadedDApp(this.loader, Arrays.asList(ReflectionStructureCodecTarget.class), ReflectionStructureCodecTarget.class.getName(), this.preserveDebuggability);
         byte[] result = dapp.saveEntireGraph(1, MAX_GRAPH_SIZE);
         String expectedHex = ""
@@ -309,7 +312,7 @@ public class LoadedDAppTest {
         // Verify writing to the superclass shape still works correctly.
         ((ReflectionStructureCodecTarget)ReflectionStructureCodecTargetSub.s_nine).i_five = 42;
         ((ReflectionStructureCodecTarget)ReflectionStructureCodecTargetSub.s_nine).i_nine = ReflectionStructureCodecTarget.s_nine;
-        
+
         LoadedDApp dapp = new LoadedDApp(this.loader, Arrays.asList(ReflectionStructureCodecTarget.class, ReflectionStructureCodecTargetSub.class), ReflectionStructureCodecTarget.class.getName(), this.preserveDebuggability);
         int hashCode = 1;
         byte[] result = dapp.saveEntireGraph(hashCode, MAX_GRAPH_SIZE);
@@ -428,7 +431,7 @@ public class LoadedDAppTest {
     @Test
     public void serializeDeserializeReferenceToClass() {
         InternedClasses internedClasses = new InternedClasses();
-        org.aion.avm.shadow.java.lang.Class<?> originalClassRef = internedClasses.get(String.class);
+        org.aion.avm.shadow.java.lang.Class<?> originalClassRef = internedClasses.get(org.aion.avm.shadow.java.lang.String.class);
         LoadedDAppTarget.s_nine = originalClassRef;
         
         LoadedDApp dapp = new LoadedDApp(this.loader, Arrays.asList(LoadedDAppTarget.class), LoadedDAppTarget.class.getName(), this.preserveDebuggability);

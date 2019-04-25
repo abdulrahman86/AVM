@@ -4,6 +4,7 @@ import java.util.*;
 
 
 public class CommonInstrumentation implements IInstrumentation {
+    public static boolean check = false;
     // Single-frame states (the currentFrame cannot also be in the callerFrame - this is just an optimization since the currentFrame access
     // is the common case and is in the critical path - may actually be worth fully-inlining these variables, at some point).
     private FrameState currentFrame;
@@ -165,6 +166,15 @@ public class CommonInstrumentation implements IInstrumentation {
             this.currentFrame.forceExitState = error;
             throw error;
         }
+
+//        if (check) {
+//            System.err.println("cost = " + cost + ", left = " + this.currentFrame.energyLeft);
+//        }
+//        try {
+//            throw new NullPointerException("cost = " + cost + ", left = " + this.currentFrame.energyLeft);
+//        } catch (NullPointerException e) {
+//            e.printStackTrace();
+//        }
     }
 
     @Override

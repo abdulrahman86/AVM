@@ -83,6 +83,7 @@ public final class Blockchain extends Object {
     public static void avm_putStorage(ByteArray key, ByteArray value) {
         int valueSize = value != null ? value.length() : 0;
 
+        System.err.println("WRITE COST [chain]: " + (StorageFees.WRITE_PRICE_PER_BYTE * valueSize));
         IInstrumentation.attachedThreadInstrumentation.get().chargeEnergy(
             RuntimeMethodFeeSchedule.BlockchainRuntime_avm_putStorage
             + StorageFees.WRITE_PRICE_PER_BYTE * valueSize);
@@ -94,6 +95,7 @@ public final class Blockchain extends Object {
         IInstrumentation.attachedThreadInstrumentation.get().chargeEnergy(RuntimeMethodFeeSchedule.BlockchainRuntime_avm_getStorage);
         ByteArray value = blockchainRuntime.avm_getStorage(key);
         int valueSize = value != null ? value.length() : 0;
+        System.err.println("READ COST [chain]: " + (StorageFees.READ_PRICE_PER_BYTE * valueSize));
         IInstrumentation.attachedThreadInstrumentation.get().chargeEnergy(StorageFees.READ_PRICE_PER_BYTE * valueSize);
         return value;
     }

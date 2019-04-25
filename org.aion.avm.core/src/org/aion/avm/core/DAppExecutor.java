@@ -56,6 +56,7 @@ public class DAppExecutor {
         try {
             // It is now safe for us to bill for the cost of loading the graph (the cost is the same, whether this came from the caller or the disk).
             // (note that we do this under the try since aborts can happen here)
+            System.err.println("READ COST 1: " + (StorageFees.READ_PRICE_PER_BYTE * rawGraphData.length));
             threadInstrumentation.chargeEnergy(StorageFees.READ_PRICE_PER_BYTE * rawGraphData.length);
             
             // Call the main within the DApp.
@@ -66,6 +67,7 @@ public class DAppExecutor {
                 int updatedNextHashCode = threadInstrumentation.peekNextHashCode();
                 ReentrantGraph calleeState = dapp.captureStateAsCallee(updatedNextHashCode, StorageFees.MAX_GRAPH_SIZE);
                 // Bill for writing this size.
+                System.err.println("WRITE COST 2: " + (StorageFees.WRITE_PRICE_PER_BYTE * calleeState.rawState.length));
                 threadInstrumentation.chargeEnergy(StorageFees.WRITE_PRICE_PER_BYTE * calleeState.rawState.length);
                 // Now, commit this back into the callerState.
                 dapp.commitReentrantChanges(initialClassWrappers, callerState, calleeState);
@@ -75,6 +77,7 @@ public class DAppExecutor {
                 // We are at the "top" so write this back to disk.
                 byte[] postCallGraphData = dapp.saveEntireGraph(threadInstrumentation.peekNextHashCode(), StorageFees.MAX_GRAPH_SIZE);
                 // Bill for writing this size.
+                System.err.println("WRITE COST 3: " + (StorageFees.WRITE_PRICE_PER_BYTE * postCallGraphData.length));
                 threadInstrumentation.chargeEnergy(StorageFees.WRITE_PRICE_PER_BYTE * postCallGraphData.length);
                 kernel.putObjectGraph(dappAddress, postCallGraphData);
             }
@@ -90,6 +93,8 @@ public class DAppExecutor {
                 refund = Math.min(energyUsed / 2, selfDestructRefund);
             }
 
+            System.err.println("REFUND [call]: " + refund);
+            System.err.println("SET USED: " + (energyUsed - refund));
             result.setEnergyUsed(energyUsed - refund);
         } catch (OutOfEnergyException e) {
             if (verboseErrors) {

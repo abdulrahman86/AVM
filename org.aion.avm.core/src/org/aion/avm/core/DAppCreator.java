@@ -258,6 +258,7 @@ public class DAppCreator {
             // Save back the state before we return.
             byte[] rawGraphData = dapp.saveEntireGraph(threadInstrumentation.peekNextHashCode(), StorageFees.MAX_GRAPH_SIZE);
             // Bill for writing this size.
+            System.err.println("WRITE COST 1: " + (StorageFees.WRITE_PRICE_PER_BYTE * rawGraphData.length));
             threadInstrumentation.chargeEnergy(StorageFees.WRITE_PRICE_PER_BYTE * rawGraphData.length);
             kernel.putObjectGraph(dappAddress, rawGraphData);
 
@@ -269,6 +270,8 @@ public class DAppCreator {
                 long selfDestructRefund = task.getSelfDestructAddressCount() * RuntimeMethodFeeSchedule.BlockchainRuntime_avm_selfDestruct_refund;
                 refund = Math.min(energyUsed / 2, selfDestructRefund);
             }
+
+            System.err.println("REFUND [create]: " + refund);
 
             // Return data of a CREATE transaction is the new DApp address.
             result.setResultCode(AvmTransactionResult.Code.SUCCESS);

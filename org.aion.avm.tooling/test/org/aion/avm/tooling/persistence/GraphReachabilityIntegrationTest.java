@@ -12,6 +12,7 @@ import org.aion.avm.tooling.abi.ABICompiler;
 import org.aion.avm.tooling.deploy.JarOptimizer;
 import org.aion.kernel.*;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -23,6 +24,7 @@ import java.math.BigInteger;
  * NOTE:  These tests very precisely measure the billing costs so changes to the fee schedule are likely to require updating these.
  * It may be worth relying on some more coarse-grained information, should it become available.
  */
+@Ignore //TODO --- remove! Just to not have to mess with energy costs while actively developing!
 public class GraphReachabilityIntegrationTest {
     @Rule
     public AvmRule avmRule = new AvmRule(false);

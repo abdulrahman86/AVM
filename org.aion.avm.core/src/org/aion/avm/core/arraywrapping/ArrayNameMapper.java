@@ -1,6 +1,7 @@
 package org.aion.avm.core.arraywrapping;
 
 import org.aion.avm.ArrayClassNameMapper;
+import org.aion.avm.NameStyle;
 import org.aion.avm.core.rejection.RejectedClassException;
 import org.aion.avm.ArrayUtil;
 import org.aion.avm.core.util.DescriptorParser;
@@ -22,6 +23,85 @@ public class ArrayNameMapper {
 
     static java.lang.String updateMethodDesc(java.lang.String desc) {
         return mapDescriptor(desc);
+    }
+
+    public static String getOriginalNameOf(String array) {
+        if (ArrayUtil.isPostRenamePrimitiveArray(NameStyle.SLASH_NAME, array)) {
+            return getOriginalNameOfPrimitiveArray(array);
+        } else if (ArrayUtil.isPostRenameObjectArray(NameStyle.SLASH_NAME, array)) {
+            return getOriginalNameOfObjectArray(array);
+        } else {
+            throw RuntimeAssertionError.unreachable("Expected post-rename slash-style array: " + array);
+        }
+    }
+
+    private static String getOriginalNameOfPrimitiveArray(String primitiveArray) {
+        if (ArrayUtil.isPostRenameSingleDimensionPrimitiveArray(NameStyle.SLASH_NAME, primitiveArray)) {
+            return getOriginalNameOfPrimitiveArray1D(primitiveArray);
+        } else if (ArrayUtil.isPostRenameMultiDimensionPrimitiveArray(NameStyle.SLASH_NAME, primitiveArray)) {
+            return getOriginalNameOfPrimitiveArrayMD(primitiveArray);
+        } else {
+            throw RuntimeAssertionError.unreachable("Expected post-rename slash-style primitive array: " + primitiveArray);
+        }
+    }
+
+    private static String getOriginalNameOfObjectArray(String objectArray) {
+        if (ArrayUtil.isPostRenameConcreteTypeObjectArray(NameStyle.SLASH_NAME, objectArray)) {
+            return getOriginalNameOfPreciseTypeObjectArray(objectArray);
+        } else if (ArrayUtil.isPostRenameUnifyingTypeObjectArray(NameStyle.SLASH_NAME, objectArray)) {
+            return getOriginalNameOfUnifyingTypeObjectArray(objectArray);
+        } else {
+            throw RuntimeAssertionError.unreachable("Expected post-rename slash-style object array: " + objectArray);
+        }
+    }
+
+    private static String getOriginalNameOfPrimitiveArray1D(String primitiveArray1D) {
+        if (primitiveArray1D.equals(PackageConstants.kArrayWrapperSlashPrefix + "IntArray")) {
+            return "[I";
+        } else if (primitiveArray1D.equals(PackageConstants.kArrayWrapperSlashPrefix + "ByteArray")) {
+            return "[B";
+        } else if (primitiveArray1D.equals(PackageConstants.kArrayWrapperSlashPrefix + "BooleanArray")) {
+            return "[Z";
+        } else if (primitiveArray1D.equals(PackageConstants.kArrayWrapperSlashPrefix + "CharArray")) {
+            return "[C";
+        } else if (primitiveArray1D.equals(PackageConstants.kArrayWrapperSlashPrefix + "FloatArray")) {
+            return "[F";
+        } else if (primitiveArray1D.equals(PackageConstants.kArrayWrapperSlashPrefix + "ShortArray")) {
+            return "[S";
+        } else if (primitiveArray1D.equals(PackageConstants.kArrayWrapperSlashPrefix + "LongArray")) {
+            return "[J";
+        } else if (primitiveArray1D.equals(PackageConstants.kArrayWrapperSlashPrefix + "DoubleArray")) {
+            return "[D";
+        } else {
+            throw RuntimeAssertionError.unreachable("Expected post-rename slash-style 1-dimension primitive array: " + primitiveArray1D);
+        }
+    }
+
+    private static String getOriginalNameOfPrimitiveArrayMD(String primitiveArrayMD) {
+        if (primitiveArrayMD.startsWith(PackageConstants.kArrayWrapperSlashPrefix)) {
+            String unwrappedArray = primitiveArrayMD.substring(PackageConstants.kArrayWrapperSlashPrefix.length());
+            return unwrappedArray.replaceAll("\\$", "\\[");
+        } else {
+            throw RuntimeAssertionError.unreachable("Expected post-rename slash-style multi-dimension primitive array: " + primitiveArrayMD);
+        }
+    }
+
+    private static String getOriginalNameOfPreciseTypeObjectArray(String preciseObjectArray) {
+        if (preciseObjectArray.startsWith(PackageConstants.kArrayWrapperSlashPrefix)) {
+            String unwrappedArray = preciseObjectArray.substring(PackageConstants.kArrayWrapperSlashPrefix.length());
+            return unwrappedArray.replaceAll("\\$", "\\[");
+        } else {
+            throw RuntimeAssertionError.unreachable("Expected post-rename slash-style 'precise type' object array: " + preciseObjectArray);
+        }
+    }
+
+    private static String getOriginalNameOfUnifyingTypeObjectArray(String unifyingObjectArray) {
+        if (unifyingObjectArray.startsWith(PackageConstants.kArrayWrapperUnifyingSlashPrefix)) {
+            String unwrappedArray = unifyingObjectArray.substring(PackageConstants.kArrayWrapperUnifyingSlashPrefix.length());
+            return unwrappedArray.replaceAll("_", "\\[");
+        } else {
+            throw RuntimeAssertionError.unreachable("Expected post-rename slash-style 'unifying type' object array: " + unifyingObjectArray);
+        }
     }
 
     // Return the wrapper descriptor of an array

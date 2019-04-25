@@ -109,7 +109,17 @@ public final class ArrayUtil {
     }
 
     public static boolean isPostRenameArray(NameStyle style, String array) {
-        return isPostRenamePrimitiveArray(style, array) || isPostRenameObjectArray(style, array);
+        return isPostRenamePrimitiveArray(style, array) || isPostRenameObjectArray(style, array) || isSpecialPostRenameArray(style, array);
+    }
+
+    public static boolean isSpecialPostRenameArray(NameStyle style, String array) {
+        String prefix = (style == NameStyle.DOT_NAME) ? PackageConstants.kArrayWrapperDotPrefix : PackageConstants.kArrayWrapperSlashPrefix;
+
+        if (array.equals(prefix + "ObjectArray") || array.equals(prefix + "IObjectArray") || array.equals(prefix + "Array") || array.equals(prefix + "IArray")) {
+            return true;
+        } else {
+            return false;
+        }
     }
 
     public static boolean isSingleDimensionalPrimitiveArray(NameStyle style, String array) {

@@ -5,13 +5,16 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
+import java.util.HashSet;
 import java.util.List;
 
+import java.util.Set;
 import org.aion.avm.core.util.DebugNameResolver;
 import org.aion.avm.internal.AvmThrowable;
 import org.aion.avm.internal.IBlockchainRuntime;
 import org.aion.avm.internal.IObjectDeserializer;
 import org.aion.avm.internal.IObjectSerializer;
+import org.aion.avm.internal.PackageConstants;
 import org.aion.avm.shadowapi.avm.Blockchain;
 import org.aion.avm.arraywrapper.ByteArray;
 import org.aion.avm.core.classloading.AvmClassLoader;
@@ -61,6 +64,7 @@ public class LoadedDApp {
 
     public final ClassLoader loader;
     private final Class<?>[] sortedClasses;
+    private final Set<String> postRenameUserClasses = new HashSet<>();
     private final String originalMainClassName;
     private final SortedFieldCache fieldCache;
 
@@ -86,6 +90,17 @@ public class LoadedDApp {
         this.sortedClasses = classes.stream()
                 .sorted((f1, f2) -> f1.getName().compareTo(f2.getName()))
                 .toArray(Class[]::new);
+
+        // Collect all of the user-defined classes, discarding any generated exception wrappers for them.
+        // This information is to be handed off to the persistance layer.
+        String userlibPrefix = (preserveDebuggability) ? PackageConstants.kUserlibDotPackage : PackageConstants.kUserDotPrefix + PackageConstants.kUserlibDotPackage;
+        for (Class<?> userClasses : this.sortedClasses) {
+            String className = userClasses.getName();
+            if (!className.startsWith(PackageConstants.kExceptionWrapperDotPrefix) && !className.startsWith(userlibPrefix)) {
+                this.postRenameUserClasses.add(className);
+            }
+        }
+
         this.originalMainClassName = originalMainClassName;
         this.fieldCache = new SortedFieldCache(this.loader, SERIALIZE_SELF, DESERIALIZE_SELF, FIELD_READ_INDEX);
         this.preserveDebuggability = preserveDebuggability;
@@ -113,7 +128,7 @@ public class LoadedDApp {
         ByteBuffer inputBuffer = ByteBuffer.wrap(rawGraphData);
         List<Object> existingObjectIndex = null;
         StandardGlobalResolver resolver = new StandardGlobalResolver(internedClassMap, this.loader);
-        StandardNameMapper classNameMapper = new StandardNameMapper();
+        StandardNameMapper classNameMapper = new StandardNameMapper(this.postRenameUserClasses, this.preserveDebuggability);
         int nextHashCode = Deserializer.deserializeEntireGraphAndNextHashCode(inputBuffer, existingObjectIndex, resolver, this.fieldCache, classNameMapper, this.sortedClasses);
         return nextHashCode;
     }
@@ -131,7 +146,7 @@ public class LoadedDApp {
         List<Object> out_instanceIndex = null;
         List<Integer> out_calleeToCallerIndexMap = null;
         StandardGlobalResolver resolver = new StandardGlobalResolver(null, this.loader);
-        StandardNameMapper classNameMapper = new StandardNameMapper();
+        StandardNameMapper classNameMapper = new StandardNameMapper(this.postRenameUserClasses, this.preserveDebuggability);
         Serializer.serializeEntireGraph(outputBuffer, out_instanceIndex, out_calleeToCallerIndexMap, resolver, this.fieldCache, classNameMapper, nextHashCode, this.sortedClasses);
         
         byte[] finalBytes = new byte[outputBuffer.position()];
@@ -141,25 +156,25 @@ public class LoadedDApp {
 
     public ReentrantGraph captureStateAsCaller(int nextHashCode, int maxGraphSize) {
         StandardGlobalResolver resolver = new StandardGlobalResolver(null, this.loader);
-        StandardNameMapper classNameMapper = new StandardNameMapper();
+        StandardNameMapper classNameMapper = new StandardNameMapper(this.postRenameUserClasses, this.preserveDebuggability);
         return ReentrantGraph.captureCallerState(resolver, this.fieldCache, classNameMapper, maxGraphSize, nextHashCode, this.sortedClasses);
     }
 
     public ReentrantGraph captureStateAsCallee(int updatedNextHashCode, int maxGraphSize) {
         StandardGlobalResolver resolver = new StandardGlobalResolver(null, this.loader);
-        StandardNameMapper classNameMapper = new StandardNameMapper();
+        StandardNameMapper classNameMapper = new StandardNameMapper(this.postRenameUserClasses, this.preserveDebuggability);
         return ReentrantGraph.captureCalleeState(resolver, this.fieldCache, classNameMapper, maxGraphSize, updatedNextHashCode, this.sortedClasses);
     }
 
     public void commitReentrantChanges(InternedClasses internedClassMap, ReentrantGraph callerState, ReentrantGraph calleeState) {
         StandardGlobalResolver resolver = new StandardGlobalResolver(internedClassMap, this.loader);
-        StandardNameMapper classNameMapper = new StandardNameMapper();
+        StandardNameMapper classNameMapper = new StandardNameMapper(this.postRenameUserClasses, this.preserveDebuggability);
         callerState.commitChangesToState(resolver, this.fieldCache, classNameMapper, this.sortedClasses, calleeState);
     }
 
     public void revertToCallerState(InternedClasses internedClassMap, ReentrantGraph callerState) {
         StandardGlobalResolver resolver = new StandardGlobalResolver(internedClassMap, this.loader);
-        StandardNameMapper classNameMapper = new StandardNameMapper();
+        StandardNameMapper classNameMapper = new StandardNameMapper(this.postRenameUserClasses, this.preserveDebuggability);
         callerState.revertChangesToState(resolver, this.fieldCache, classNameMapper, this.sortedClasses);
     }
 
