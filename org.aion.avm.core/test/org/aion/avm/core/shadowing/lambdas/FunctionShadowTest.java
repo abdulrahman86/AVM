@@ -8,6 +8,7 @@ import org.aion.avm.core.CommonAvmFactory;
 import org.aion.avm.core.blockchainruntime.EmptyCapabilities;
 import org.aion.avm.core.dappreading.JarBuilder;
 import org.aion.avm.core.util.CodeAndArguments;
+import org.aion.avm.core.util.ABIUtil;
 import org.aion.avm.core.util.Helpers;
 import org.aion.kernel.*;
 import org.junit.After;
@@ -38,6 +39,36 @@ public class FunctionShadowTest {
     @After
     public void tearDown() {
         this.avm.shutdown();
+    }
+
+    @Test
+    public void testLambdaRunnableHash() {
+        // deploy it
+        Class<?> testClass = FunctionShadowResource.class;
+        org.aion.types.Address dappAddr = deployTest(testClass);
+        
+        // call transactions and validate the results
+        byte[] txData = new byte[] {0};
+        Transaction tx = Transaction.call(FROM, dappAddr, this.kernel.getNonce(FROM), BigInteger.ZERO, txData, ENERGY_LIMIT, ERNGY_PRICE);
+        AvmTransactionResult result = (AvmTransactionResult) this.avm.run(this.kernel, new Transaction[] {tx})[0].get();
+        Assert.assertEquals(AvmTransactionResult.Code.SUCCESS, result.getResultCode());
+        int hashCode = (Integer) ABIUtil.decodeOneObject(result.getReturnData());
+        System.out.println("HASH: " + hashCode);
+    }
+
+    @Test
+    public void testLambdaFunctionHash() {
+        // deploy it
+        Class<?> testClass = FunctionShadowResource.class;
+        org.aion.types.Address dappAddr = deployTest(testClass);
+        
+        // call transactions and validate the results
+        byte[] txData = new byte[] {1};
+        Transaction tx = Transaction.call(FROM, dappAddr, this.kernel.getNonce(FROM), BigInteger.ZERO, txData, ENERGY_LIMIT, ERNGY_PRICE);
+        AvmTransactionResult result = (AvmTransactionResult) this.avm.run(this.kernel, new Transaction[] {tx})[0].get();
+        Assert.assertEquals(AvmTransactionResult.Code.SUCCESS, result.getResultCode());
+        int hashCode = (Integer) ABIUtil.decodeOneObject(result.getReturnData());
+        System.out.println("HASH: " + hashCode);
     }
 
     @Test
